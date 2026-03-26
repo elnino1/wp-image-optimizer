@@ -1,0 +1,9 @@
+{
+    "name": "davidlenir/wp-image-optimizer",
+    "description": "WP Image Optimizer tests",
+    "type": "wordpress-plugin",
+    "require-dev": {
+        "lucatume/wp-browser": "^3.4"
+    },
+    "require": {}
+}
