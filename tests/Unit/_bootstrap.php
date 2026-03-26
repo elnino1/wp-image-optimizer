@@ -78,6 +78,27 @@ if (!function_exists('get_post_meta')) {
 }
 
 // ---------------------------------------------------------------------------
+// Options API stubs
+// ---------------------------------------------------------------------------
+
+if (!function_exists('get_option')) {
+    function get_option($option, $default = false)
+    {
+        global $mock_options;
+        return $mock_options[$option] ?? $default;
+    }
+}
+
+if (!function_exists('update_option')) {
+    function update_option($option, $value, $autoload = null)
+    {
+        global $mock_options;
+        $mock_options[$option] = $value;
+        return true;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Upload directory helpers
 // ---------------------------------------------------------------------------
 

@@ -2,41 +2,61 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 jobs:
-  build:
-    name: Build & Release plugin zip
+  release:
+    name: Semantic release & plugin zip
     runs-on: ubuntu-latest
+    permissions:
+      contents: write       # push tags + create GitHub release
+      pull-requests: write  # update PR with release info (semantic-release)
 
     steps:
-      - name: Checkout
+      - name: Checkout (full history for semantic-release)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false   # semantic-release uses its own token
 
-      - name: Set version from tag
-        id: version
-        run: echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+      # ── Semantic release ──────────────────────────────────────────────────
+      # Reads conventional commits since the last tag and:
+      #   • bumps the version (patch / minor / major)
+      #   • creates a Git tag (e.g. v1.2.3)
+      #   • outputs the new version so the next step can name the zip
+      - name: Run semantic-release
+        id: semrel
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          # Plugins are installed automatically; pin versions for stability
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ── Build zip (only when a new version was actually released) ─────────
       - name: Build plugin zip
+        if: steps.semrel.outputs.new_release_published == 'true'
         run: |
           PLUGIN_SLUG="wp-image-optimizer"
+          VERSION="${{ steps.semrel.outputs.new_release_version }}"
           DIST_DIR="${PLUGIN_SLUG}"
 
-          # Create a clean staging directory
           mkdir -p "${DIST_DIR}"
-
-          # Copy only the files WordPress needs
           cp wp-image-optimizer.php "${DIST_DIR}/"
-          cp -r includes           "${DIST_DIR}/"
-          cp -r assets             "${DIST_DIR}/"
-          cp    README.md          "${DIST_DIR}/"
+          cp -r includes            "${DIST_DIR}/"
+          cp -r assets              "${DIST_DIR}/"
+          cp    README.md           "${DIST_DIR}/"
 
-          # Zip it up
-          zip -r "${PLUGIN_SLUG}-${{ steps.version.outputs.tag }}.zip" "${DIST_DIR}/"
+          zip -r "${PLUGIN_SLUG}-v${VERSION}.zip" "${DIST_DIR}/"
+          echo "ZIP_NAME=${PLUGIN_SLUG}-v${VERSION}.zip" >> $GITHUB_ENV
 
-      - name: Create GitHub Release and upload zip
+      # ── Attach zip to the release that semantic-release just created ──────
+      - name: Upload zip to GitHub Release
+        if: steps.semrel.outputs.new_release_published == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: "wp-image-optimizer-${{ steps.version.outputs.tag }}.zip"
-          generate_release_notes: true
+          tag_name: "v${{ steps.semrel.outputs.new_release_version }}"
+          files: ${{ env.ZIP_NAME }}

@@ -79,13 +79,25 @@ class WPIO_Upload_Handler
             }
         }
 
-        // According to the updated PRD, we MUST save original images by default to act as
-        // the final fallback if AVIF/WebP aren't supported.
-        // Therefore, we do NOT replace the base attachment or delete the original file here
-        // unless a setting is explicitly enabled (to be built later if required).
+        // Read the admin setting for preservation.
+        // Defaults to TRUE (preserve) if the setting has never been saved.
+        $settings = get_option('wpio_settings', []);
+        $preserve_originals = isset($settings['preserve_originals']) ? (bool) $settings['preserve_originals'] : true;
 
-        // Return the unmodified metadata so WP still considers the JPEG/PNG the primary file,
-        // but our `_wpio_optimized_paths` meta stores the AVIF/WebP versions.
+        if (!$preserve_originals) {
+            // The user has chosen to delete originals.
+            // Promote the best available format (AVIF preferred, then WebP) as the primary attachment.
+            if (!empty($paths['avif'])) {
+                $this->replace_attachment_with_format($attachment_id, $original_file_path, $paths['avif'], 'image/avif', 'avif', $metadata);
+            } elseif (!empty($paths['webp'])) {
+                $this->replace_attachment_with_format($attachment_id, $original_file_path, $paths['webp'], 'image/webp', 'webp', $metadata);
+            }
+            return $metadata;
+        }
+
+        // Default (preserve originals): Return unmodified metadata so WP still considers
+        // the JPEG/PNG the primary file. The `_wpio_optimized_paths` meta stores the
+        // AVIF/WebP versions for use by the frontend filter.
         return $metadata;
     }
 
