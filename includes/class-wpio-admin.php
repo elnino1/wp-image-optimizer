@@ -20,6 +20,27 @@ class WPIO_Admin
     {
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
+        add_action('admin_post_wpio_save_settings', [$this, 'save_settings']);
+    }
+
+    public function save_settings()
+    {
+        check_admin_referer('wpio_save_settings');
+        if (!current_user_can('manage_options')) {
+            wp_die('Permission denied.');
+        }
+
+        $preserve = isset($_POST['wpio_preserve_originals']) ? 1 : 0;
+
+        $settings = get_option('wpio_settings', []);
+        $settings['preserve_originals'] = $preserve;
+        update_option('wpio_settings', $settings);
+
+        wp_redirect(add_query_arg(
+            ['page' => 'wp-image-optimizer', 'settings-updated' => '1'],
+            admin_url('upload.php')
+        ));
+        exit;
     }
 
     public function add_admin_menu()
@@ -53,9 +74,17 @@ class WPIO_Admin
     {
         $converter = WPIO_Converter::get_instance();
         $support = $converter->get_server_support();
+        $settings = get_option('wpio_settings', []);
+        $preserve_originals = isset($settings['preserve_originals']) ? (bool) $settings['preserve_originals'] : true;
         ?>
         <div class="wrap wpio-admin-wrap">
             <h1>WordPress Image Optimizer</h1>
+
+            <?php if (isset($_GET['settings-updated'])): ?>
+                <div class="notice notice-success is-dismissible">
+                    <p>Settings saved.</p>
+                </div>
+            <?php endif; ?>
 
             <div class="card">
                 <h2>System Status</h2>
@@ -72,6 +101,32 @@ class WPIO_Admin
                         <p>Your server does not support modern image formats. The plugin will not work.</p>
                     </div>
                 <?php endif; ?>
+            </div>
+
+            <div class="card">
+                <h2>Settings</h2>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="wpio_save_settings">
+                    <?php wp_nonce_field('wpio_save_settings'); ?>
+
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row">
+                                <label for="wpio_preserve_originals">Preserve Original Images</label>
+                            </th>
+                            <td>
+                                <input type="checkbox" id="wpio_preserve_originals" name="wpio_preserve_originals" value="1"
+                                    <?php checked($preserve_originals, true); ?>>
+                                <p class="description">
+                                    When enabled (recommended), original JPEG/PNG files are kept as a final browser fallback.
+                                    Disabling this will delete originals after conversion to AVIF/WebP.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <?php submit_button('Save Settings'); ?>
+                </form>
             </div>
 
             <div class="card wpio-bulk-card">
