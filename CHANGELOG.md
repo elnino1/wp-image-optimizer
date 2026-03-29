@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/elnino1/wp-image-optimizer/compare/v1.0.1...v1.0.2) (2026-03-29)
+
+
+### Bug Fixes
+
+* fix tests workflow ([07e3d93](https://github.com/elnino1/wp-image-optimizer/commit/07e3d939642a3b5d70611a051f1ff55f6570e2fe))
+
 ## [1.0.1](https://github.com/elnino1/wp-image-optimizer/compare/v1.0.0...v1.0.1) (2026-03-26)
 
 
