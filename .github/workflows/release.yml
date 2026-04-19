@@ -39,23 +39,11 @@ jobs:
       # ── Build zip (only when a new version was actually released) ─────────
       - name: Build plugin zip
         if: steps.semrel.outputs.new_release_published == 'true'
-        run: |
-          PLUGIN_SLUG="wp-image-optimizer"
-          VERSION="${{ steps.semrel.outputs.new_release_version }}"
-          DIST_DIR="${PLUGIN_SLUG}"
-
-          mkdir -p "${DIST_DIR}"
-          cp wp-image-optimizer.php "${DIST_DIR}/"
-          cp -r includes            "${DIST_DIR}/"
-          cp -r assets              "${DIST_DIR}/"
-          cp    README.md           "${DIST_DIR}/"
-
-          zip -r "${PLUGIN_SLUG}-v${VERSION}.zip" "${DIST_DIR}/"
-          echo "ZIP_NAME=${PLUGIN_SLUG}-v${VERSION}.zip" >> $GITHUB_ENV
+        run: bash package.sh "${{ steps.semrel.outputs.new_release_version }}"
 
       # ── Attach zip to the release that semantic-release just created ──────
       - name: Upload zip to GitHub Release
         if: steps.semrel.outputs.new_release_published == 'true'
-        run: gh release upload "v${{ steps.semrel.outputs.new_release_version }}" "${{ env.ZIP_NAME }}"
+        run: gh release upload "v${{ steps.semrel.outputs.new_release_version }}" "wp-image-optimizer-v${{ steps.semrel.outputs.new_release_version }}.zip"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
