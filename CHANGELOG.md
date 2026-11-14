@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/elnino1/wp-image-optimizer/compare/v1.0.2...v1.1.0) (2026-11-14)
+
+
+### Features
+
+* add packaging delivery ([0527e4a](https://github.com/elnino1/wp-image-optimizer/commit/0527e4a1d69a9d67168ebf33c5190ba3fe5d690e))
+
 ## [1.0.2](https://github.com/elnino1/wp-image-optimizer/compare/v1.0.1...v1.0.2) (2026-03-29)
 
 
